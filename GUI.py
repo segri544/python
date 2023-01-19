@@ -6,7 +6,7 @@ class Win(QMainWindow):
         super().__init__()
         self.initGUI()
         self.show()
-    def initGUI(self):
+    def initGUI(self):  
         self.setGeometry(100,100,900,600)
         self.setWindowTitle("Butonclicked")
         self.labelmerhaba = QLabel("",self)

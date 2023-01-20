@@ -1,6 +1,18 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton
 from PyQt5.QtSerialPort import QSerialPort
+import serial.tools.list_ports
+
+ports=serial.tools.list_ports.comports()
+# create blank instance of serial object
+
+serialInst= serial.Serial()
+portList=[]
+
+for oneport in ports:
+    portList.append(str(oneport))
+
+
 
 class DroneDataWindow(QWidget):
     def __init__(self):
@@ -30,7 +42,7 @@ class DroneDataWindow(QWidget):
 
         # Create com port combo box
         self.com_port_combo = QComboBox()
-        self.com_port_combo.addItems(["com3", "com4", "com5"])
+        self.com_port_combo.addItems(portList)
         self.settings_layout.addWidget(self.com_port_combo)
 
         # Create connect button

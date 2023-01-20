@@ -79,7 +79,7 @@ class DroneDataWindow(QWidget):
             # Read data from serial port
             data = self.serial_port.readline()
             data = data.decode("utf-8")
-
+            print(data)
             # Split data into variables
             data = data.split(",")
             altitude = data[0]

@@ -1,0 +1,50 @@
+import sys
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout
+from PyQt5.QtSerialPort import QSerialPort
+
+class DroneDataWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("Drone Data")
+
+        # Create layout
+        self.layout = QVBoxLayout()
+        self.setLayout(self.layout)
+
+        # Create labels to display data
+        self.altitude_label = QLabel("Altitude: N/A")
+        self.speed_label = QLabel("Speed: N/A")
+        self.battery_label = QLabel("Battery: N/A")
+        self.layout.addWidget(self.altitude_label)
+        self.layout.addWidget(self.speed_label)
+        self.layout.addWidget(self.battery_label)
+
+        # Create serial port object and connect to com3
+        self.serial_port = QSerialPort()
+        self.serial_port.setPortName("com3")
+        self.serial_port.open(QSerialPort.ReadOnly)
+
+        # Connect data ready signal to update data function
+        self.serial_port.readyRead.connect(self.update_data)
+
+    def update_data(self):
+        # Read data from serial port
+        data = self.serial_port.readAll()
+        data = data.data().decode("utf-8")
+
+        # Split data into variables
+        data = data.split(",")
+        altitude = data[0]
+        speed = data[1]
+        battery = data[2]
+
+        # Update labels with new data
+        self.altitude_label.setText("Altitude: " + altitude)
+        self.speed_label.setText("Speed: " + speed)
+        self.battery_label.setText("Battery: " + battery)
+
+if __name__ == "__main__":
+    app = QApplication(sys.argv)
+    window = DroneDataWindow()
+    window.show()
+    sys.exit(app.exec_())

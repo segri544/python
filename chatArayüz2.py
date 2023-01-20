@@ -6,8 +6,6 @@ class DroneDataWindow(QWidget):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Drone Data")
-        self.populate_com_ports()
-
 
         # Create layout
         self.layout = QVBoxLayout()
@@ -48,10 +46,8 @@ class DroneDataWindow(QWidget):
         baudrate = int(self.baudrate_combo.currentText())
         com_port = self.com_port_combo.currentText()
 
-        # Set baudrate for serial port
+        # Set baudrate and com port for serial port
         self.serial_port.setBaudRate(baudrate)
-
-        # Set com port for serial port
         self.serial_port.setPortName(com_port)
 
         # Open serial port
@@ -75,16 +71,7 @@ class DroneDataWindow(QWidget):
         self.altitude_label.setText("Altitude: " +altitude)
         self.speed_label.setText("Speed: " + speed)
         self.battery_label.setText("Battery: " + battery)
-    def populate_com_ports(self):
-        # Clear any existing items in the combo box
-        self.com_port_combo.clear()
 
-        # Get a list of all available serial ports
-        available_ports = QSerialPortInfo.availablePorts()
-
-        # Add the names of the available ports to the combo box
-        for port in available_ports:
-            self.com_port_combo.addItem(port.portName())
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = DroneDataWindow()

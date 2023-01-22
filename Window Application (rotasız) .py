@@ -3,6 +3,7 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLay
 import serial.tools.list_ports
 import serial
 import threading
+import json
 UpdateTimer=0.5
 
 class DroneDataWindow(QWidget):
@@ -53,6 +54,12 @@ class DroneDataWindow(QWidget):
         # populate available com ports
         self.populate_com_ports()
         self.serial_port = None
+
+        # Create send the path button
+        self.send_path_button = QPushButton("Send The Path")
+        self.layout.addWidget(self.send_path_button)
+        self.send_path_button.clicked.connect(self.send_path)
+
         self.update_timer = threading.Timer(1, self.update_data)
         self.update_timer.start()
         
@@ -60,6 +67,7 @@ class DroneDataWindow(QWidget):
     def stop_motors(self):
         if self.serial_port and self.serial_port.is_open:
             # Send "stop motors" command
+            print("Motor Stop Send")
             self.serial_port.write("stop_motors".encode())
 
     def populate_com_ports(self):
@@ -107,7 +115,17 @@ class DroneDataWindow(QWidget):
             self.battery_label.setText("Battery: " + battery)
             self.update_timer = threading.Timer(UpdateTimer, self.update_data)
             self.update_timer.start()
-    
+    def send_path(self):
+        if self.serial_port and self.serial_port.is_open:
+            # Define the path tuple
+            path = ([1.0,2.0],[3.0,4.0],[5.0,6.0])
+            # Convert the path tuple to a json string
+            path_json = json.dumps(path)
+            print("path_json: "+path_json)
+            # Send the path json string to the device
+            self.serial_port.write(path_json.encode())
+            print("path_json binary hali: ",end="")
+            print(path_json.encode())
 
 
 

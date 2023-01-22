@@ -3,6 +3,8 @@ from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLay
 import serial.tools.list_ports
 import serial
 import threading
+UpdateTimer=0.5
+
 class DroneDataWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -103,7 +105,7 @@ class DroneDataWindow(QWidget):
             self.altitude_label.setText("Altitude: " + altitude)
             self.speed_label.setText("Speed: " + speed)
             self.battery_label.setText("Battery: " + battery)
-            self.update_timer = threading.Timer(1, self.update_data)
+            self.update_timer = threading.Timer(UpdateTimer, self.update_data)
             self.update_timer.start()
     
 

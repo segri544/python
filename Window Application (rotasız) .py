@@ -4,6 +4,7 @@ import serial.tools.list_ports
 import serial
 import threading
 import json
+import json_parcalayıcı
 UpdateTimer=0.5
 
 class DroneDataWindow(QWidget):
@@ -118,7 +119,8 @@ class DroneDataWindow(QWidget):
     def send_path(self):
         if self.serial_port and self.serial_port.is_open:
             # Define the path tuple
-            path = ([1.0,2.0],[3.0,4.0],[5.0,6.0])
+            # örnek path = ([1.0,2.0],[3.0,4.0],[5.0,6.0])
+            path = json_parcalayıcı.get_coordinates()
             # Convert the path tuple to a json string
             path_json = json.dumps(path)
             print("path_json: "+path_json)

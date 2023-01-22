@@ -2,7 +2,7 @@ import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton
 import serial.tools.list_ports
 import serial
-
+import threading
 class DroneDataWindow(QWidget):
     def __init__(self):
         super().__init__()
@@ -43,9 +43,22 @@ class DroneDataWindow(QWidget):
         self.settings_layout.addWidget(self.disconnect_button)
         self.disconnect_button.clicked.connect(self.disconnect_from_port)
 
+        # Create stop motors button
+        self.stop_motors_button = QPushButton("Stop Motors")
+        self.layout.addWidget(self.stop_motors_button)
+        self.stop_motors_button.clicked.connect(self.stop_motors)
+
         # populate available com ports
         self.populate_com_ports()
         self.serial_port = None
+        self.update_timer = threading.Timer(1, self.update_data)
+        self.update_timer.start()
+        
+
+    def stop_motors(self):
+        if self.serial_port and self.serial_port.is_open:
+            # Send "stop motors" command
+            self.serial_port.write("stop_motors".encode())
 
     def populate_com_ports(self):
         # Clear any existing items in the combo box
@@ -65,7 +78,7 @@ class DroneDataWindow(QWidget):
         print(f"Selected baudrate: {baudrate}")
         print(f"Selected com port: {com_port}")
         if self.serial_port and self.serial_port.is_open:
-            self.serial_port.close()
+             self.serial_port.close()
         self.serial_port = serial.Serial(com_port, baudrate)
         # Connect data ready signal to update data function
         self.update_data()
@@ -79,7 +92,7 @@ class DroneDataWindow(QWidget):
             # Read data from serial port
             data = self.serial_port.readline()
             data = data.decode("utf-8")
-            print(data)
+
             # Split data into variables
             data = data.split(",")
             altitude = data[0]
@@ -90,6 +103,10 @@ class DroneDataWindow(QWidget):
             self.altitude_label.setText("Altitude: " + altitude)
             self.speed_label.setText("Speed: " + speed)
             self.battery_label.setText("Battery: " + battery)
+            self.update_timer = threading.Timer(1, self.update_data)
+            self.update_timer.start()
+    
+
 
 
 if __name__ == "__main__":

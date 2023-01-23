@@ -4,8 +4,22 @@ import serial.tools.list_ports
 import serial
 import threading
 import json
-import json_parcalayıcı
+from PyQt5.QtCore import QUrl
+from PyQt5.QtWebEngineWidgets import QWebEngineView
 UpdateTimer=0.5
+def get_coordinates():
+    # read json file
+    with open("map.geojson", "r") as json_file:
+        data = json.load(json_file)
+
+    # get coordinates information
+    coordinates = data["features"][0]["geometry"]["coordinates"]
+
+    # convert coordinates to tuple
+    coordinates_tuple = tuple(coordinates)
+    
+    # print(coordinates_tuple)
+    return coordinates_tuple
 
 class DroneDataWindow(QWidget):
     def __init__(self):
@@ -65,9 +79,23 @@ class DroneDataWindow(QWidget):
         self.layout.addWidget(self.send_path_button)
         self.send_path_button.clicked.connect(self.send_path)
 
+        # Create open map button
+        self.open_map_button = QPushButton("Open Map")
+        self.layout.addWidget(self.open_map_button)
+        self.open_map_button.clicked.connect(self.open_map)
+
         self.update_timer = threading.Timer(1, self.update_data)
         self.update_timer.start()
         
+    def open_map(self):
+        # Create a QWebEngineView and set the URL to geojson.io
+        self.web_view = QWebEngineView(self)
+        self.web_view.load(QUrl("https://geojson.io"))
+        # Set the size of the web view
+        self.web_view.resize(1500, 850)
+        self.web_view.move(self.frameGeometry().topRight() - self.web_view.rect().topRight())
+        # Show the web view
+        self.web_view.show()
 
     def stop_motors(self):
         if self.serial_port and self.serial_port.is_open:
@@ -127,7 +155,7 @@ class DroneDataWindow(QWidget):
         if self.serial_port and self.serial_port.is_open:
             # Define the path tuple
             # örnek path = ([1.0,2.0],[3.0,4.0],[5.0,6.0])
-            path = json_parcalayıcı.get_coordinates()
+            path = get_coordinates()
             # Convert the path tuple to a json string
             path_json = json.dumps(path)
             print("path_json: "+path_json)

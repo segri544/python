@@ -20,9 +20,13 @@ class DroneDataWindow(QWidget):
         self.altitude_label = QLabel("Altitude: N/A")
         self.speed_label = QLabel("Speed: N/A")
         self.battery_label = QLabel("Battery: N/A")
+        self.latitude_label = QLabel("Latitude: N/A")
+        self.longtitude_label = QLabel("Longtitude: N/A")
         self.layout.addWidget(self.altitude_label)
         self.layout.addWidget(self.speed_label)
         self.layout.addWidget(self.battery_label)
+        self.layout.addWidget(self.latitude_label)
+        self.layout.addWidget(self.longtitude_label)
 
         # Create layout for baudrate and com port selection
         self.settings_layout = QHBoxLayout()
@@ -37,7 +41,7 @@ class DroneDataWindow(QWidget):
         self.com_port_combo = QComboBox()
         self.settings_layout.addWidget(self.com_port_combo)
 
-        # Create connect button
+        # Create connect button"
         self.connect_button = QPushButton("Connect")
         self.settings_layout.addWidget(self.connect_button)
         self.connect_button.clicked.connect(self.connect_to_port)
@@ -109,11 +113,14 @@ class DroneDataWindow(QWidget):
             altitude = data[0]
             speed = data[1]
             battery = data[2]
-
+            latitude = data[3]
+            longtitude =data [4] 
             # Update labels with new data
             self.altitude_label.setText("Altitude: " + altitude)
             self.speed_label.setText("Speed: " + speed)
             self.battery_label.setText("Battery: " + battery)
+            self.latitude_label.setText("Latitude: " + latitude)
+            self.longtitude_label.setText("Longtitude: " + longtitude)
             self.update_timer = threading.Timer(UpdateTimer, self.update_data)
             self.update_timer.start()
     def send_path(self):

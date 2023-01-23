@@ -10,5 +10,5 @@ def get_coordinates():
     # convert coordinates to tuple
     coordinates_tuple = tuple(coordinates)
     
-    print(coordinates_tuple)
+    # print(coordinates_tuple)
     return coordinates_tuple

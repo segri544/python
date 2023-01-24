@@ -151,6 +151,7 @@ class DroneDataWindow(QWidget):
             self.longtitude_label.setText("Longtitude: " + longtitude)
             self.update_timer = threading.Timer(UpdateTimer, self.update_data)
             self.update_timer.start()
+
     def send_path(self):
         if self.serial_port and self.serial_port.is_open:
             # Define the path tuple
@@ -158,16 +159,18 @@ class DroneDataWindow(QWidget):
             path = get_coordinates()
             # Convert the path tuple to a json string
             path_json = json.dumps(path)
-            print("path_json: "+path_json)
             # Send the path json string to the device
             self.serial_port.write(path_json.encode())
-            print("path_json binary hali: ",end="")
-            print(path_json.encode())
+            # print("path_json binary hali: ",end="")
+            # print(path_json.encode())
+            if self.web_view:
+                self.web_view.close()
 
+    
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = DroneDataWindow()
-    window.show()
+    window.showMaximized()
     sys.exit(app.exec_())

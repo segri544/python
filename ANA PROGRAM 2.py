@@ -6,7 +6,18 @@ import threading
 import json
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-UpdateTimer=0.5
+import datetime
+UpdateTimer=0.05
+
+
+current_time = datetime.datetime.now().strftime("%H_%M_%S")
+logFile=current_time+".txt"
+
+
+# create new empty txt file to save data
+with open(logFile, 'w', encoding='utf-8') as f:
+  pass
+
 def get_coordinates():
     # read json file
     with open("map.geojson", "r") as json_file:
@@ -31,16 +42,37 @@ class DroneDataWindow(QWidget):
         self.setLayout(self.layout)
 
         # Create labels to display data
-        self.altitude_label = QLabel("Altitude: N/A")
-        self.speed_label = QLabel("Speed: N/A")
-        self.battery_label = QLabel("Battery: N/A")
-        self.latitude_label = QLabel("Latitude: N/A")
-        self.longtitude_label = QLabel("Longtitude: N/A")
-        self.layout.addWidget(self.altitude_label)
-        self.layout.addWidget(self.speed_label)
+        self.unlem_label = QLabel("unlem: N/A")
+        self.status_label = QLabel("status: N/A")
+        self.motor1_label = QLabel("motor1: N/A")
+        self.motor2_label = QLabel("motor2: N/A")
+        self.motor3_label = QLabel("motor3: N/A")
+        self.motor4_label = QLabel("motor4: N/A")
+        self.battery_label = QLabel("battery: N/A")
+        self.roll_label = QLabel("roll: N/A")
+        self.pitch_label = QLabel("pitch: N/A")
+        self.yaw_label = QLabel("yaw: N/A")
+        self.altitude_label = QLabel("altitude: N/A")
+        self.ch_throttle_label = QLabel("ch_throttle: N/A")
+        self.ch_roll_label = QLabel("ch_roll: N/A")
+        self.ch_pitch_label = QLabel("ch_pitch: N/A")
+        self.ch_yaw_label = QLabel("ch_yaw: N/A")
+
+        self.layout.addWidget(self.unlem_label)
+        self.layout.addWidget(self.status_label)
+        self.layout.addWidget(self.motor1_label)
+        self.layout.addWidget(self.motor2_label)
+        self.layout.addWidget(self.motor3_label)
+        self.layout.addWidget(self.motor4_label)
         self.layout.addWidget(self.battery_label)
-        self.layout.addWidget(self.latitude_label)
-        self.layout.addWidget(self.longtitude_label)
+        self.layout.addWidget(self.roll_label)
+        self.layout.addWidget(self.pitch_label)
+        self.layout.addWidget(self.yaw_label)
+        self.layout.addWidget(self.altitude_label)
+        self.layout.addWidget(self.ch_throttle_label)
+        self.layout.addWidget(self.ch_roll_label)
+        self.layout.addWidget(self.ch_pitch_label)
+        self.layout.addWidget(self.ch_yaw_label)
 
         # Create layout for baudrate and com port selection
         self.settings_layout = QHBoxLayout()
@@ -64,7 +96,6 @@ class DroneDataWindow(QWidget):
         self.disconnect_button = QPushButton("Disconnect")
         self.settings_layout.addWidget(self.disconnect_button)
         self.disconnect_button.clicked.connect(self.disconnect_from_port)
-
         # Create stop motors button
         self.stop_motors_button = QPushButton("Stop Motors")
         self.layout.addWidget(self.stop_motors_button)
@@ -134,21 +165,57 @@ class DroneDataWindow(QWidget):
         if self.serial_port and self.serial_port.is_open:
             # Read data from serial port
             data = self.serial_port.readline()
-            data = data.decode("utf-8")
-
+         
+            # data = data.decode("utf-8")
+           
+            
+            try:
+                data = data.decode('utf-8', errors='ignore')
+            except UnicodeDecodeError:
+                print('Error: Could not decode data')
+            data=str(data)
+            print(data)
+            data=data[0:-2]    
             # Split data into variables
             data = data.split(",")
-            altitude = data[0]
-            speed = data[1]
-            battery = data[2]
-            latitude = data[3]
-            longtitude =data [4] 
+            unlem = data[0]
+            status = data[1]
+            motor1 = data[2]
+            motor2 = data[3]
+            motor3 =data[4]
+            motor4 = data[5]
+            batarya = data[6]
+            roll = data[7]
+            pitch = data[8]
+            yaw =data[9]
+            altitude = data[10]
+            ch_throttle = data[11]
+            ch_roll = data[12]
+            ch_pitch = data[13]
+            ch_yaw =data[14]
+            # open the text file for writing
+            with open(logFile, 'a',encoding='utf-8') as f:
+                # write the data to the file
+                f.write("unlem: "+unlem+" status: "+status+" motor1: "+motor1+" motor2: "+motor2+" motor3: "+motor3+" motor4: "+motor4+" battery: "+batarya+" roll: "+roll+" pitch: "+pitch+" yaw: "+yaw+" altitude: "+altitude+" ch_throttle: "+ch_throttle+" ch_roll: "+ch_roll+" ch_pitch: "+ch_pitch+" ch_yaw: "+ch_yaw+"\n")
+
+            
             # Update labels with new data
-            self.altitude_label.setText("Altitude: " + altitude)
-            self.speed_label.setText("Speed: " + speed)
-            self.battery_label.setText("Battery: " + battery)
-            self.latitude_label.setText("Latitude: " + latitude)
-            self.longtitude_label.setText("Longtitude: " + longtitude)
+            self.unlem_label.setText("unlem: " + unlem)
+            self.status_label.setText("status: " + status)
+            self.motor1_label.setText("motor1: " + motor1)
+            self.motor2_label.setText("motor2: " + motor2)
+            self.motor3_label.setText("motor3: " + motor3)
+            self.motor4_label.setText("motor4: " + motor4)
+            self.battery_label.setText("battery: " + batarya)
+            self.roll_label.setText("roll: " + roll)
+            self.pitch_label.setText("pitch: " + pitch)
+            self.yaw_label.setText("yaw: " + yaw)
+            self.altitude_label.setText("altitude: " + altitude)
+            self.ch_throttle_label.setText("ch_throttle: " + ch_throttle)
+            self.ch_roll_label.setText("ch_roll: " + ch_roll)
+            self.ch_pitch_label.setText("ch_pitch: " + ch_pitch)
+            self.ch_yaw_label.setText("ch_yaw: " + ch_yaw)
+
             self.update_timer = threading.Timer(UpdateTimer, self.update_data)
             self.update_timer.start()
 

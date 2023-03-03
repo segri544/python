@@ -1,21 +1,22 @@
 import sys
-import serial
-import struct
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton
+from PyQt5.QtWidgets import QApplication,QLineEdit, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton
 import serial.tools.list_ports
 import serial
 import threading
 import json
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
-
-
-
+import datetime
 UpdateTimer=0.05
 
 
+current_time = datetime.datetime.now().strftime("%H_%M_%S")
+logFile=current_time+".txt"
+
 
 # create new empty txt file to save data
+with open(logFile, 'w', encoding='utf-8') as f:
+  pass
 
 def get_coordinates():
     # read json file
@@ -73,10 +74,17 @@ class DroneDataWindow(QWidget):
         self.layout.addWidget(self.ch_pitch_label)
         self.layout.addWidget(self.ch_yaw_label)
 
-        # Create layout for baudrate and com port selection
+        # add layout for buttons and input lines
         self.settings_layout = QHBoxLayout()
         self.layout.addLayout(self.settings_layout)
+        self.pid_layout=QHBoxLayout()
+        self.layout.addLayout(self.pid_layout)
+        self.send_pid_layout=QHBoxLayout()
+        self.layout.addLayout(self.send_pid_layout)
+        self.map_layout=QHBoxLayout()
+        self.layout.addLayout(self.map_layout)
 
+        # Create layout for baudrate and com port selection
         # Create baudrate combo box
         self.baudrate_combo = QComboBox()
         self.baudrate_combo.addItems(["9600", "115200", "230400"])
@@ -95,6 +103,25 @@ class DroneDataWindow(QWidget):
         self.disconnect_button = QPushButton("Disconnect")
         self.settings_layout.addWidget(self.disconnect_button)
         self.disconnect_button.clicked.connect(self.disconnect_from_port)
+        
+        
+        # create PİD VALUES and send pid values  
+        self.kp_label = QLabel("PROPOTIONAL:")
+        self.ki_label = QLabel("INTEGRAL:")
+        self.kd_label = QLabel("DERIVATIVE:")
+        self.linekp = QLineEdit(self)
+        self.lineki = QLineEdit(self)
+        self.linekd = QLineEdit(self)
+        self.pid_layout.addWidget(self.kp_label)
+        self.pid_layout.addWidget(self.linekp)
+        self.pid_layout.addWidget(self.ki_label)
+        self.pid_layout.addWidget(self.lineki)
+        self.pid_layout.addWidget(self.kd_label)
+        self.pid_layout.addWidget(self.linekd)
+        self.send_pid_button = QPushButton("Send PID Parameters")
+        self.send_pid_layout.addWidget(self.send_pid_button)
+        self.send_pid_button.clicked.connect(self.send_pid_values)
+
         # Create stop motors button
         self.stop_motors_button = QPushButton("Stop Motors")
         self.layout.addWidget(self.stop_motors_button)
@@ -105,18 +132,29 @@ class DroneDataWindow(QWidget):
         self.serial_port = None
 
         # Create send the path button
+
         self.send_path_button = QPushButton("Send The Path")
-        self.layout.addWidget(self.send_path_button)
+        self.map_layout.addWidget(self.send_path_button)
         self.send_path_button.clicked.connect(self.send_path)
 
         # Create open map button
         self.open_map_button = QPushButton("Open Map")
-        self.layout.addWidget(self.open_map_button)
+        self.map_layout.addWidget(self.open_map_button)
         self.open_map_button.clicked.connect(self.open_map)
 
         self.update_timer = threading.Timer(1, self.update_data)
         self.update_timer.start()
-        
+
+
+    def send_pid_values(self):
+        if self.serial_port and self.serial_port.is_open:
+            # Send "stop motors" command
+            print(f'PID values send...')
+            message=f"pid_{self.linekp.text()}_{self.lineki.text()}_{self.linekd.text()}"
+            print(message)
+            self.serial_port.write(message.encode())
+
+
     def open_map(self):
         # Create a QWebEngineView and set the URL to geojson.io
         self.web_view = QWebEngineView(self)
@@ -131,7 +169,9 @@ class DroneDataWindow(QWidget):
         if self.serial_port and self.serial_port.is_open:
             # Send "stop motors" command
             print("Motor Stop Send")
-            self.serial_port.write("stop_motors".encode())
+            message="smt"
+            print(message)
+            self.serial_port.write(message.encode())
 
     def populate_com_ports(self):
         # Clear any existing items in the combo box
@@ -162,29 +202,41 @@ class DroneDataWindow(QWidget):
     
     def update_data(self):
         if self.serial_port and self.serial_port.is_open:
-            raw = self.serial_port.read(32)
-            if len(raw) == 32:
-                data = struct.unpack('<HHHHHHHhhhHHHHHh', raw)
-                print(data)
-                unlem= str(data[0])
-                status = str(data[1])
-                motor1 = str(data[2])
-                motor2= str(data[3])
-                motor3 = str(data[4])
-                motor4 = str(data[5])
-                batarya = str(data[6])
-                roll = str(data[7]/100.0)
-                pitch = str(data[8]/100.0)
-                yaw = str(data[9]/100.0)
-                altitude = str(data[10]/10.0)
-                ch_throttle = str(data[11])
-                ch_roll = str(data[12])
-                ch_pitch = str(data[13])
-                ch_yaw = str(data[14])
-            
-            
-           
+            # Read data from serial port
+            data = self.serial_port.readline()
          
+            # data = data.decode("utf-8")
+           
+            
+            try:
+                data = data.decode('utf-8', errors='ignore')
+            except UnicodeDecodeError:
+                print('Error: Could not decode data')
+            data=str(data)
+            #print(data)
+            data=data[0:-2]    
+            # Split data into variables
+            data = data.split(",")
+            unlem = data[0]
+            status = data[1]
+            motor1 = data[2]
+            motor2 = data[3]
+            motor3 =data[4]
+            motor4 = data[5]
+            batarya = data[6]
+            roll = data[7]
+            pitch = data[8]
+            yaw =data[9]
+            altitude = data[10]
+            ch_throttle = data[11]
+            ch_roll = data[12]
+            ch_pitch = data[13]
+            ch_yaw =data[14]
+            # open the text file for writing
+            # with open(logFile, 'a',encoding='utf-8') as f:
+            #     # write the data to the file
+            #     f.write("unlem: "+unlem+" status: "+status+" motor1: "+motor1+" motor2: "+motor2+" motor3: "+motor3+" motor4: "+motor4+" battery: "+batarya+" roll: "+roll+" pitch: "+pitch+" yaw: "+yaw+" altitude: "+altitude+" ch_throttle: "+ch_throttle+" ch_roll: "+ch_roll+" ch_pitch: "+ch_pitch+" ch_yaw: "+ch_yaw+"\n")
+
             
             # Update labels with new data
             self.unlem_label.setText("unlem: " + unlem)
@@ -226,5 +278,5 @@ class DroneDataWindow(QWidget):
 if __name__ == "__main__":
     app = QApplication(sys.argv)
     window = DroneDataWindow()
-    window.showMaximized()
+    window.showNormal()
     sys.exit(app.exec_())

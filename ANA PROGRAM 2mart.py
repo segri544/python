@@ -10,13 +10,13 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import datetime
 
-current_time = datetime.datetime.now().strftime("%H_%M_%S")
-logFile=current_time+".txt"
+# current_time = datetime.datetime.now().strftime("%H_%M_%S")
+# logFile=current_time+".txt"
 
 
-# create new empty txt file to save data
-with open(logFile, 'w', encoding='utf-8') as f:
-  pass
+# # create new empty txt file to save data
+# with open(logFile, 'w', encoding='utf-8') as f:
+#   pass
 
 UpdateTimer=0.05
 
@@ -112,9 +112,9 @@ class DroneDataWindow(QWidget):
         
         
         # create PİD VALUES and send pid values  
-        self.kp_label = QLabel("PROPOTIONAL:")
-        self.ki_label = QLabel("INTEGRAL:")
-        self.kd_label = QLabel("DERIVATIVE:")
+        self.kp_label = QLabel("Kp:")
+        self.ki_label = QLabel("Ki:")
+        self.kd_label = QLabel("Kd:")
         self.linekp = QLineEdit(self)
         self.lineki = QLineEdit(self)
         self.linekd = QLineEdit(self)
@@ -155,9 +155,11 @@ class DroneDataWindow(QWidget):
         if self.serial_port and self.serial_port.is_open:
             # Send "stop motors" command
             print(f'PID values send...')
-            message=f"pid_{self.linekp.text()}_{self.lineki.text()}_{self.linekd.text()}"
-            print(message)
-            self.serial_port.write(message.encode())
+            i_am_sending_pid_command=34                                                      # as it is wanted by Şahin K.
+            package=struct.pack('<Hfff',i_am_sending_pid_command,float(self.linekp.text()),float(self.lineki.text()),float(self.linekd.text()))   #totalde 2+4*3=16 byte
+            print(package)
+            self.serial_port.write(package)
+           #H uint16 <-----> h int16
 
     def open_map(self):
         # Create a QWebEngineView and set the URL to geojson.io
@@ -172,10 +174,11 @@ class DroneDataWindow(QWidget):
     def stop_motors(self):
         if self.serial_port and self.serial_port.is_open:
             # Send "stop motors" command
+            i_am_sending_stop_motor_command=33  # as it is wanted by Şahin K.
+            package=struct.pack('<H',i_am_sending_stop_motor_command)    #2byte
             print("Motor Stop Send")
-            message="smt"
-            print(message)
-            self.serial_port.write(message.encode())
+            print(package)
+            self.serial_port.write(package)
 
     def populate_com_ports(self):
         # Clear any existing items in the combo box
@@ -209,7 +212,7 @@ class DroneDataWindow(QWidget):
             raw = self.serial_port.read(32)
             if len(raw) == 32:
                 data = struct.unpack('<HHHHHHHhhhHHHHHh', raw)
-                print(data)
+                #print(data)
                 unlem= str(data[0])
                 status = str(data[1])
                 motor1 = str(data[2])
@@ -226,10 +229,10 @@ class DroneDataWindow(QWidget):
                 ch_pitch = str(data[13])
                 ch_yaw = str(data[14])
             
-            # open the text file for writing
-            with open(logFile, 'a',encoding='utf-8') as f:
-                # write the data to the file
-                f.write("unlem: "+unlem+" status: "+status+" motor1: "+motor1+" motor2: "+motor2+" motor3: "+motor3+" motor4: "+motor4+" battery: "+batarya+" roll: "+roll+" pitch: "+pitch+" yaw: "+yaw+" altitude: "+altitude+" ch_throttle: "+ch_throttle+" ch_roll: "+ch_roll+" ch_pitch: "+ch_pitch+" ch_yaw: "+ch_yaw+"\n")
+            # # open the text file for writing
+            # with open(logFile, 'a',encoding='utf-8') as f:
+            #     # write the data to the file
+            #     f.write("unlem: "+unlem+" status: "+status+" motor1: "+motor1+" motor2: "+motor2+" motor3: "+motor3+" motor4: "+motor4+" battery: "+batarya+" roll: "+roll+" pitch: "+pitch+" yaw: "+yaw+" altitude: "+altitude+" ch_throttle: "+ch_throttle+" ch_roll: "+ch_roll+" ch_pitch: "+ch_pitch+" ch_yaw: "+ch_yaw+"\n")
 
            
             # Update labels with new data

@@ -9,7 +9,7 @@ import json
 from PyQt5.QtCore import QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import datetime
-
+import time
 # current_time = datetime.datetime.now().strftime("%H_%M_%S")
 # logFile=current_time+".txt"
 
@@ -214,6 +214,11 @@ class DroneDataWindow(QWidget):
                 data = struct.unpack('<HHHHHHHhhhHHHHHh', raw)
                 #print(data)
                 unlem= str(data[0])
+                if unlem!="33":
+                    self.disconnect_from_port()
+                    time.sleep(1)
+                    self.connect_to_port()
+                
                 status = str(data[1])
                 motor1 = str(data[2])
                 motor2= str(data[3])

@@ -10,13 +10,13 @@ from PyQt5.QtCore import QUrl
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import datetime
 import time
-# current_time = datetime.datetime.now().strftime("%H_%M_%S")
-# logFile=current_time+".txt"
+current_time = datetime.datetime.now().strftime("%H_%M_%S")
+logFile=current_time+".txt"
 
 
-# # create new empty txt file to save data
-# with open(logFile, 'w', encoding='utf-8') as f:
-#   pass
+# create new empty txt file to save data
+with open(logFile, 'w', encoding='utf-8') as f:
+  pass
 
 UpdateTimer=0.05
 
@@ -59,10 +59,9 @@ class DroneDataWindow(QWidget):
         self.pitch_label = QLabel("pitch: N/A")
         self.yaw_label = QLabel("yaw: N/A")
         self.altitude_label = QLabel("altitude: N/A")
-        self.ch_throttle_label = QLabel("ch_throttle: N/A")
-        self.ch_roll_label = QLabel("ch_roll: N/A")
-        self.ch_pitch_label = QLabel("ch_pitch: N/A")
-        self.ch_yaw_label = QLabel("ch_yaw: N/A")
+        self.longtitude_label = QLabel("Longtitude: N/A")
+        self.latitude_label = QLabel("Latitude: N/A")
+        
 
         self.layout.addWidget(self.unlem_label)
         self.layout.addWidget(self.status_label)
@@ -75,10 +74,9 @@ class DroneDataWindow(QWidget):
         self.layout.addWidget(self.pitch_label)
         self.layout.addWidget(self.yaw_label)
         self.layout.addWidget(self.altitude_label)
-        self.layout.addWidget(self.ch_throttle_label)
-        self.layout.addWidget(self.ch_roll_label)
-        self.layout.addWidget(self.ch_pitch_label)
-        self.layout.addWidget(self.ch_yaw_label)
+        self.layout.addWidget(self.longtitude_label)
+        self.layout.addWidget(self.latitude_label)
+        
 
         # add layout for buttons and input lines
         self.settings_layout = QHBoxLayout()
@@ -206,12 +204,21 @@ class DroneDataWindow(QWidget):
     def disconnect_from_port(self):
         if self.serial_port and self.serial_port.is_open:
             self.serial_port.close()
-    
+
+    def closeEvent(self,event):
+        try:
+            self.disconnect_from_port()
+        except:
+            pass
+        print('Window is closing!')
+        # Do something here, such as saving data or prompting the user to confirm
+
+
     def update_data(self):
         if self.serial_port and self.serial_port.is_open:
             raw = self.serial_port.read(32)
             if len(raw) == 32:
-                data = struct.unpack('<HHHHHHHhhhHHHHHh', raw)
+                data = struct.unpack('<HHHHHHHhhhHIIh', raw)
                 #print(data)
                 unlem= str(data[0])
                 if unlem!="33":
@@ -229,15 +236,14 @@ class DroneDataWindow(QWidget):
                 pitch = str(data[8]/100.0)
                 yaw = str(data[9]/100.0)
                 altitude = str(data[10]/10.0)
-                ch_throttle = str(data[11])
-                ch_roll = str(data[12])
-                ch_pitch = str(data[13])
-                ch_yaw = str(data[14])
+                longtitude=str(data[11]/(1.0**6))    # gönderirken çarptıgına böl
+                latitude=str(data[12]/(1.0**6))      # gönderirken çarptıgına böl
+                bos=str(data[13])               # son 2byte bosluk var
             
-            # # open the text file for writing
-            # with open(logFile, 'a',encoding='utf-8') as f:
-            #     # write the data to the file
-            #     f.write("unlem: "+unlem+" status: "+status+" motor1: "+motor1+" motor2: "+motor2+" motor3: "+motor3+" motor4: "+motor4+" battery: "+batarya+" roll: "+roll+" pitch: "+pitch+" yaw: "+yaw+" altitude: "+altitude+" ch_throttle: "+ch_throttle+" ch_roll: "+ch_roll+" ch_pitch: "+ch_pitch+" ch_yaw: "+ch_yaw+"\n")
+            # open the text file for writing
+            with open(logFile, 'a',encoding='utf-8') as f:
+                # write the data to the file
+                f.write("unlem: "+unlem+" status: "+status+" motor1: "+motor1+" motor2: "+motor2+" motor3: "+motor3+" motor4: "+motor4+" battery: "+batarya+" roll: "+roll+" pitch: "+pitch+" yaw: "+yaw+" altitude: "+altitude+" lontitude: "+longtitude+" latitude: "+latitude+"\n")
 
            
             # Update labels with new data
@@ -252,10 +258,9 @@ class DroneDataWindow(QWidget):
             self.pitch_label.setText("pitch: " + pitch)  
             self.yaw_label.setText("yaw: " + yaw)  
             self.altitude_label.setText("altitude: " + altitude)  
-            self.ch_throttle_label.setText("ch_throttle: " + ch_throttle)  
-            self.ch_roll_label.setText("ch_roll: " + ch_roll)  
-            self.ch_pitch_label.setText("ch_pitch: " + ch_pitch)  
-            self.ch_yaw_label.setText("ch_yaw: " + ch_yaw)  
+            self.longtitude_label.setText("longtitude: " + longtitude)  
+            self.latitude_label.setText("latitude: " + latitude)  
+            
 
             self.update_timer = threading.Timer(UpdateTimer, self.update_data)
             self.update_timer.start()

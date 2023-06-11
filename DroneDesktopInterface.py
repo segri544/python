@@ -1,16 +1,17 @@
 import sys
 import serial
 import struct
-from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton,QLineEdit
+from PyQt5.QtWidgets import QApplication, QWidget, QLabel, QVBoxLayout, QHBoxLayout, QComboBox, QPushButton,QSlider
 import serial.tools.list_ports
 import serial
 import threading
 import json
-from PyQt5.QtCore import QUrl,QTimer
+from PyQt5.QtCore import QUrl,QTimer,Qt
 from PyQt5.QtWebEngineWidgets import QWebEngineView
 import datetime
 import time
 import folium
+import qdarktheme
 
 current_time = datetime.datetime.now().strftime("%H_%M_%S")
 logFile=current_time+".txt"
@@ -19,7 +20,8 @@ logFile=current_time+".txt"
 # # create new empty txt file to save data
 # with open(logFile, 'w', encoding='utf-8') as f:
 #   pass
-
+zero=0
+isfirstcoordinate=1
 UpdateTimer=0.05
 
 # create new empty txt file to save data
@@ -27,8 +29,10 @@ UpdateTimer=0.05
 class DroneDataWindow(QWidget):
     def __init__(self):
         super().__init__()
+        self.isfirstcoordinate=True
+        self.coords=[]
         self.setWindowTitle("Drone Data")
-
+        self.kumanda_baglanti=True# bunu kaldır data[2] koy
         # Create layout
         self.layoutV= QVBoxLayout()
         self.setLayout(self.layoutV)
@@ -39,6 +43,7 @@ class DroneDataWindow(QWidget):
         self.buttonLay= QHBoxLayout()
         self.layoutV.addLayout(self.buttonLay)
         # Create labels to display data
+
         self.unlem_label = QLabel("unlem: N/A")
         self.status_label = QLabel("status: N/A")
         self.motor1_label = QLabel("motor1: N/A")
@@ -69,25 +74,16 @@ class DroneDataWindow(QWidget):
         self.dataLayout.addWidget(self.latitude_label)
 #---------------------------------------------------------------------------------------------------------------------------------------
         # initialize folium map
-        self.m = folium.Map(location=[39.94523994189189, 32.84516220237323], zoom_start=10)
-        # add marker to map
-        # folium.Marker(
-        #     location=[39.94523994189189, 32.84516220237323],s
-        #     popup='drone',
-        #     icon=folium.Icon(color='red', icon='info-sign')
-        # ).add_to(self.m)
-
-        # create web view
+        self.map = folium.Map(location=[39.93086591765178, 32.846558080233294], zoom_start=12)
         self.view = QWebEngineView()
-        map_html = self.m._repr_html_()
+        map_html = self.map._repr_html_()
         self.view.setHtml(map_html)
         
         # create layout
         self.layout.addWidget(self.view)
-        # self.map_layout.addWidget(self.view)
-        
-        # time.sleep(5)
-        
+
+        qdarktheme.setup_theme()
+
 
         
 
@@ -115,15 +111,18 @@ class DroneDataWindow(QWidget):
         self.buttonLay.addWidget(self.disconnect_button)
         self.disconnect_button.clicked.connect(self.disconnect_from_port)
         
-        
-
-        
-        
-
         # Create stop motors button
         self.stop_motors_button = QPushButton("Stop Motors")
         self.layoutV.addWidget(self.stop_motors_button)
         self.stop_motors_button.clicked.connect(self.stop_motors)
+
+
+        self.sld = QSlider(Qt.Horizontal)
+        self.sld.setRange(1000,2000)
+        self.sld.setValue(1500)
+        self.sld.setFocusPolicy(Qt.NoFocus) # remove focus border
+        self.layoutV.addWidget(self.sld)
+        self.sld.valueChanged[int].connect(self.onSliderChange) # connect signal to slot
 
         # populate available com ports
         self.populate_com_ports()
@@ -131,31 +130,39 @@ class DroneDataWindow(QWidget):
 
         self.update_timer = threading.Timer(1, self.update_data)
         self.update_timer.start()
-    def update_location_map(self,longtitude,latitude):
-        pass
 
-        
-        # # # add marker to map
-        # folium.Marker(
-        #     location=[longtitude, latitude],
-        #     popup='Boston',
-        #     icon=folium.Icon(color='red', icon='info-sign')
-        # ).add_to(self.m)
-
-        # # # create web view
-        # self.view = QWebEngineView()
-        # map_html = self.m._repr_html_()
-        # self.view.setHtml(map_html)
-        
+    def update_location_map(self, longtitude, latitude):
+        if not isfirstcoordinate:
+            self.coords2=[]
+            self.coords2.append([self.eski[0],self.eski[1]])
+            self.coords2.append([longtitude,latitude])
+            folium.PolyLine(self.coords2).add_to(self.map)
+            self.eski= [longtitude,latitude]
+            
+        else:
+            self.eski= (longtitude,latitude)
+            self.isfirstcoordinate=False
         
     def stop_motors(self):
         if self.serial_port and self.serial_port.is_open:
             # Send "stop motors" command
-            i_am_sending_stop_motor_command=33  # as it is wanted by Şahin K.
-            package=struct.pack('<H',i_am_sending_stop_motor_command)    #2byte
+            i_am_sending_stop_motor_command=33 
+            # 2 byte command (33), 30 byte bos
+            package = struct.pack('<HHHHHHHHHHHHHHHH',i_am_sending_stop_motor_command,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0) 
             print("Motor Stop Send")
             print(package)
             self.serial_port.write(package)
+
+    def onSliderChange(self, value):
+        print(f"sld değeri {value} and {type(value)}") # prints the new value of the slider
+        
+        i_am_sending_control_motor_command=35  
+        # 2 byte command (35), 2byte (motor speed value), 28 byte bos
+        package = struct.pack('<HHHHHHHHHHHHHHHH',i_am_sending_control_motor_command,value,0,0,0,0,0,0,0,0,0,0,0,0,0,0) 
+        # print(f"sld paketi{package}")
+        if self.serial_port and self.serial_port.is_open :
+            # print("yolladım")
+            self.serial_port.write(package)        
 
     def populate_com_ports(self):
         # Clear any existing items in the combo box
@@ -179,6 +186,7 @@ class DroneDataWindow(QWidget):
         self.update_data()
     def disconnect_from_port(self):
         if self.serial_port and self.serial_port.is_open:
+
             self.serial_port.close()
     def closeEvent(self,event):
         try:
@@ -191,7 +199,7 @@ class DroneDataWindow(QWidget):
         if self.serial_port and self.serial_port.is_open:
             raw = self.serial_port.read(32)
             if len(raw) == 32:
-                data = struct.unpack('<HHHHHHHhhhHIIh', raw)
+                data = struct.unpack('<HHHHHHHhhHHIIh', raw)
                 #print(data)
                 unlem= str(data[0])
                 # if unlem!="33":
@@ -208,14 +216,15 @@ class DroneDataWindow(QWidget):
                 pitch = str(data[8]/100.0)
                 yaw = str(data[9]/100.0)
                 altitude = str(data[10]/10.0)
-                longtitude = str(data[11]/(1.0**6))   # gönderirken çarptıgına böl
-                latitude=str(data[12]/(1.0**6))   # gönderirken çarptıgına böl
+                longtitude = str(data[11]/10000000)   # gönderirken çarptıgına böl
+                latitude=str(data[12]/10000000)   # gönderirken çarptıgına böl
                 bos=str(data[13])               # son 2byte bosluk var
-            # open the text file for writing
+            # # open the text file for writing
             # with open(logFile, 'a',encoding='utf-8') as f:
             #     # write the data to the file
             #     f.write("unlem: "+unlem+" status: "+status+" motor1: "+motor1+" motor2: "+motor2+" motor3: "+motor3+" motor4: "+motor4+" battery: "+batarya+" roll: "+roll+" pitch: "+pitch+" yaw: "+yaw+" altitude: "+altitude+" lontitude: "+str(longtitude)+" latitude: "+str(latitude)+"\n")
-            # # Update labels with new data
+            
+            # Update labels with new data
             self.unlem_label.setText("unlem: " + unlem)  
             self.status_label.setText("status: " + status)  
             self.motor1_label.setText("motor1: " + motor1)  
@@ -229,6 +238,7 @@ class DroneDataWindow(QWidget):
             self.altitude_label.setText("altitude: " + altitude)  
             self.longtitude_label.setText("longtitude: " + str(longtitude))  
             self.latitude_label.setText("latitude: " + str(latitude))  
+            self.update_location_map(longtitude, latitude)
             self.update_timer = threading.Timer(UpdateTimer, self.update_data)
             self.update_timer.start()
 if __name__ == "__main__":
